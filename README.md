@@ -3,7 +3,7 @@ ISUCON4の予選に必要なツールをまとめつつコードを整理する
 
 # タイムスケジュール
 
-以下、暫定のもの。(SEE ALSO: #6)
+以下、暫定のもの。(SEE ALSO: [#6](https://github.com/karupanerura/isucon2014-elimination/issues/6))
 
 * 09:00 集合
 * 10:00 競技開始
