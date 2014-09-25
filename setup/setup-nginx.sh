@@ -1,4 +1,6 @@
 #!/bin/sh
+set -eu
+
 NGINX_VERSION=1.6.2
 PCRE_VERSION=8.35
 OPENSSL_VERSION=1.0.1i
@@ -11,11 +13,12 @@ wait
 tar zxf nginx-$NGINX_VERSION.tar.gz
 tar jxf pcre-$PCRE_VERSION.tar.bz2
 tar zxf openssl-$OPENSSL_VERSION.tar.gz
+rm nginx-$NGINX_VERSION.tar.gz pcre-$PCRE_VERSION.tar.bz2 openssl-$OPENSSL_VERSION.tar.gz
+
 mv pcre-$PCRE_VERSION nginx-$NGINX_VERSION
 mv openssl-$OPENSSL_VERSION nginx-$NGINX_VERSION
-rm nginx-$NGINX_VERSION.tar.gz pcre-$PCRE_VERSION.tar.bz2 openssl-$OPENSSL_VERSION.tar.gz
-cd nginx-$NGINX_VERSION
 
+cd nginx-$NGINX_VERSION
 ./configure \
     --with-pcre=pcre-$PCRE_VERSION --with-pcre-jit \
     --with-openssl=openssl-$OPENSSL_VERSION  --with-http_ssl_module \
