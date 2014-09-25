@@ -1,3 +1,7 @@
+# cmake
+必要になったら。`yum install cmake`で入ると思う。  
+最悪、[がんばる](http://www.cmake.org/download/)。
+
 # libevent
 setup/setup-libevent.sh をrootまたはsudo権限があるユーザーで実行する。  
 バージョンはshell script内に記載。
@@ -54,3 +58,6 @@ $HOME/.mysql-build/bin/mysql-build 5.6.20 /opt/mysql/5.6 handlersocket-1.1.1
 ```sh
 $HOME/.mysql-build/bin/mysql-build 5.6.20 /opt/mysql/5.6 handlersocket-1.1.1 q4m-master
 ```
+
+# h2o
+たぶん使わないけど一応`setup/setup-h2o.sh`でビルドできるようになっている。
