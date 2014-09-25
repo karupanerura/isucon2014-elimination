@@ -2,6 +2,9 @@
 setup/setup-libevent.sh をrootまたはsudo権限があるユーザーで実行する。  
 バージョンはshell script内に記載。
 
+# ImageMagick
+ImageMagickは[binary-release](http://www.imagemagick.org/script/binary-releases.php#unix)があるのでこれを使う。
+
 # pcre
 setup/setup-pcre.sh をrootまたはsudo権限があるユーザーで実行する。  
 バージョンはshell script内に記載。
