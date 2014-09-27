@@ -10,9 +10,6 @@ my $root_dir = File::Basename::dirname(__FILE__);
 my $app = Isu4Qualifier::Web->psgi($root_dir);
 builder {
     enable 'ReverseProxy';
-    enable 'Static',
-        path => qr!^/(?:stylesheets|images)/!,
-        root => $root_dir . '/public';
     enable 'Session::Simple',
         store       => Isu4Qualifier::Web->cache,
         cookie_name => 'isu4_session';
