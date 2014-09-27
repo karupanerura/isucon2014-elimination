@@ -200,6 +200,15 @@ sub pop_flash {
 };
 
 sub render_html_content {
+    my ($self, $c, $content) = @_;
+    my $body = $self->_render_html_content($content);;
+    $c->res->status( 200 );
+    $c->res->content_type('text/html; charset=UTF-8');
+    $c->res->body( $body );
+    return $c->res;
+}
+
+sub _render_html_content {
     my ($self, $content) = @_;
     return <<__TEMPLATE__;
 <!DOCTYPE html>
@@ -225,11 +234,11 @@ __TEMPLATE__
 }
 
 sub render_html_index {
-    my ($self, $flash) = @_;
+    my ($self, $c, $flash) = @_;
     my $flash_html = $flash ?
         qq{<div id="notice-message" class="alert alert-danger" role="alert">$flash</div>}:
         q{};
-    return $self->render_html_content(<<__TEMPLATE__);
+    return $self->render_html_content($c, <<__TEMPLATE__);
 <div id="be-careful-phising" class="panel panel-danger">
   <div class="panel-heading">
     <span class="hikaru-mozi">偽画面にご注意ください！</span>
@@ -273,8 +282,8 @@ __TEMPLATE__
 }
 
 sub render_html_mypage {
-    my ($self, $last_login) = @_;
-    return $self->render_html_content(<<__TEMPLATE__);
+    my ($self, $c, $last_login) = @_;
+    return $self->render_html_content($c, <<__TEMPLATE__);
 <div class="alert alert-success" role="alert">
   ログインに成功しました。<br>
   未読のお知らせが０件、残っています。
@@ -333,7 +342,7 @@ filter 'session' => sub {
 get '/' => [qw(session)] => sub {
     my ($self, $c) = @_;
 
-    return $c->render_html_index($self->pop_flash($c));
+    return $self->render_html_index($c, $self->pop_flash($c));
 };
 
 post '/login' => sub {
@@ -371,7 +380,7 @@ get '/mypage' => [qw(session)] => sub {
     my $msg;
 
     if ($user) {
-        return $c->render_html_mypage($self->last_login($user_id));
+        return $self->render_html_mypage($c, $self->last_login($user_id));
     }
     else {
         $self->set_flash($c, "You must be logged in");
