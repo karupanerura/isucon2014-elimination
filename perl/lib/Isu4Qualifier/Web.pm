@@ -9,6 +9,7 @@ use Digest::SHA qw/ sha256_hex /;
 use Data::MessagePack;
 use Compress::LZ4;
 use Cache::Memcached::Fast;
+use Redis::Fast;
 
 {
     my $config = {
@@ -25,16 +26,27 @@ use Cache::Memcached::Fast;
     sub _compress_lz4   { ${$_[1]} = Compress::LZ4::compress(${$_[0]})   }
     sub _uncompress_lz4 { ${$_[1]} = Compress::LZ4::decompress(${$_[0]}) }
 
-    my $memcached = Cache::Memcached::Fast->new({
-        servers            => ['127.0.0.1:11211'],
-        serialize_methods  => [\&_message_pack, \&_message_unpack],
-        utf8               => 1,
-        ketama_points      => 150,
-        hash_namespace     => 0,
-        compress_threshold => 5_000,
-        compress_methods   => [\&_compress_lz4, \&_uncompress_lz4],
-    });
-    sub cache { $memcached }
+    my %memcached;
+    sub cache {
+        $memcached{$$} //= Cache::Memcached::Fast->new({
+            servers            => ['127.0.0.1:11211'],
+            serialize_methods  => [\&_message_pack, \&_message_unpack],
+            utf8               => 1,
+            ketama_points      => 150,
+            hash_namespace     => 0,
+            compress_threshold => 5_000,
+            compress_methods   => [\&_compress_lz4, \&_uncompress_lz4],
+        });
+    }
+    __PACKAGE__->cache;
+}
+
+{
+    my %redis;
+    sub redis {
+        $redis{$$} //= Redis::Fast->new(server => 'localhost:6379');
+    }
+    __PACKAGE__->redis;
 }
 
 # XXX: extend for DBIx::Sunny
@@ -80,24 +92,18 @@ sub calculate_password_hash {
 
 sub user_locked {
     my ($self, $user) = @_;
-    my $summary = $self->db->select_row(
-        'SELECT last_failure_count FROM user_login_last_failure_count WHERE user_id = ?',
-        $user->{id}
-    );
+    return unless $user;
 
-    return unless $summary;
-    $self->config->{user_lock_threshold} <= $summary->{last_failure_count};
+    my $last_failure_count = $self->redis->get("user_login_last_failure_count:$user->{id}");
+    return unless $last_failure_count;
+    $self->config->{user_lock_threshold} <= $last_failure_count;
 };
 
 sub ip_banned {
     my ($self, $ip) = @_;
-    my $summary = $self->db->select_row(
-        'SELECT last_failure_count FROM ip_login_last_failure_count WHERE ip = ?',
-        $ip
-    );
-
-    return unless $summary;
-    $self->config->{ip_ban_threshold} <= $summary->{last_failure_count};
+    my $last_failure_count = $self->redis->get("ip_login_last_failure_count:$ip");
+    return unless $last_failure_count;
+    $self->config->{ip_ban_threshold} <= $last_failure_count;
 };
 
 sub attempt_login {
@@ -146,16 +152,8 @@ sub last_login {
 
 sub banned_ips {
     my ($self) = @_;
-
-    $self->db->selectcol_arrayref('
-        SELECT ip FROM
-            ip_login_last_failure_count
-            WHERE
-                last_failure_count >= ?
-        ',
-        undef,
-        $self->config->{ip_ban_threshold}
-    );
+    my @ips = $self->redis->smembers('banned_ip');
+    return \@ips;
 }
 
 sub locked_users {
@@ -191,42 +189,24 @@ sub login_log {
 
     if ($succeeded) {
         # ログイン成功したら、失敗回数をリセット
-        $self->db->query_cached(
-            'UPDATE user_login_last_failure_count SET last_failure_count = 0 WHERE user_id = ?',
-            $user_id
-        );
-        $self->db->query_cached(
-            'UPDATE ip_login_last_failure_count SET last_failure_count = 0 WHERE ip = ?',
-            $ip
-        );
+        $self->redis->set("user_login_last_failure_count:$user_id", 0);
+        $self->redis->set("ip_login_last_failure_count:$ip",        0);
     }
     else {
-
-        # XXX しきい値に達したら、incrしないようにしてもいいけど、それだと、しきい値の変更に弱いので、一旦避ける
-
         # user_locked用のfailure_countサマリー
-        # - insert or update ...
         if ($user_id) {
-            $self->db->query_cached_rows(
-                'UPDATE user_login_last_failure_count SET last_failure_count = last_failure_count + 1 WHERE user_id = ?',
-                $user_id,
-            ) or $self->db->query_cached(
-                'INSERT INTO user_login_last_failure_count (`user_id`, `last_failure_count`) VALUES (?, 1)',
-                $user_id,
-            );
+            my $cnt = $self->redis->incr("user_login_last_failure_count:$user_id");
+            if ($cnt >= $self->config->{user_lock_threshold}) {
+                $self->redis->sadd(locked_user => $user_id)
+            }
         }
 
-
         # ip_banned用のfailure_countサマリー
-        # - insert or update ...
         if ($ip) {
-            $self->db->query_cached_rows(
-                'UPDATE ip_login_last_failure_count SET last_failure_count = last_failure_count + 1 WHERE ip = ?',
-                $ip
-            ) or $self->db->query_cached(
-                'INSERT INTO ip_login_last_failure_count (`ip`, `last_failure_count`) VALUES (?, 1)',
-                $ip
-            );
+            my $cnt = $self->redis->incr("ip_login_last_failure_count:$ip");
+            if ($cnt >= $self->config->{ip_ban_threshold}) {
+                $self->redis->sadd(banned_ip => $ip);
+            }
         }
     }
 };
