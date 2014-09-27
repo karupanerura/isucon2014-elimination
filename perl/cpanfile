@@ -7,6 +7,8 @@ requires 'Linux::Inotify2';
 # servers
 requires 'Server::Starter';
 requires 'Monoceros';
+requires 'Starlet';
+requires 'Starman';
 
 # framework and code
 requires 'Kossy', 0.19;
