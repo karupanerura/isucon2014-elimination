@@ -1,14 +1,6 @@
 #!/bin/sh
 set -x
 set -e
-BASEDIR="/home/isucon/webapp"
-cd ${BASEDIR}
-git pull
-
-sudo /etc/init.d/mysql restart
-sudo /etc/init.d/supervisord restart
-
-
 cd $(dirname $0)
 
 myuser=root
