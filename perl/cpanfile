@@ -1,11 +1,25 @@
-requires "Kossy", 0.19;
-requires "DBIx::Sunny";
-requires "JSON::XS";
-requires "Digest::SHA";
-requires "File::Temp";
-requires "Time::Piece";
+# XS
+requires 'YAML::XS';
+requires 'JSON::XS';
+requires 'HTTP::Parser::XS';
+requires 'Linux::Inotify2';
+requires 'Cookie::Baker::XS';
 
-requires "DBD::mysql";
-requires "Starman";
-requires "Plack::Session";
-requires "Data::Dumper";
+# servers
+requires 'Server::Starter';
+requires 'Monoceros';
+requires 'Starlet';
+requires 'Starman';
+
+# framework and code
+requires 'Kossy', 0.19;
+requires 'DBD::mysql';
+requires 'DBIx::Sunny';
+requires 'Digest::SHA';
+requires 'Data::MessagePack';
+requires 'Compress::LZ4';
+requires 'Cache::Memcached::Fast';
+
+# app.psgi
+requires 'Plack';
+requires 'Plack::Middleware::Session::Simple';
