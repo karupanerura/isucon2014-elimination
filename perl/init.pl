@@ -30,7 +30,8 @@ push @tasks => async {
     for my $user_id (keys %last_failure_count) {
         $redis->set("user_login_last_failure_count:$user_id", $last_failure_count{$user_id}, $noop);
         if ($last_failure_count{$user_id} >= $config->{user_lock_threshold}) {
-            $redis->sadd(locked_user => $user_id)
+            my $user = $Isu4Qualifier::Web::USERS[$user_id - 1];
+            $redis->sadd(locked_user => $user->{login});
         }
     }
     $redis->wait_all_responses;
