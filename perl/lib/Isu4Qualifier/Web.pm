@@ -146,16 +146,34 @@ sub last_login {
 
 sub banned_ips {
     my ($self) = @_;
+    my @ips; # banned_ips
+    my $threshold = $self->config->{ip_ban_threshold};
 
-    $self->db->selectcol_arrayref('
-        SELECT ip FROM
-            ip_login_last_failure_count
-            WHERE
-                last_failure_count >= ?
-        ',
-        undef,
-        $self->config->{ip_ban_threshold}
+    # 1) threashold分試したのに、一回も成功したことがないip
+    my $not_succeeded = $self->db->select_all('SELECT ip FROM 
+        (SELECT ip, MAX(succeeded) as max_succeeded, COUNT(1) as cnt FROM login_log GROUP BY ip) AS t0
+        WHERE
+        t0.max_succeeded = 0
+        AND
+        t0.cnt >= ?', $threshold
     );
+
+    for my $row (@$not_succeeded) {
+        push @ips, $row->{ip};
+    }
+
+    # 2) 最後にログイン成功してから、ログインを試みた回数が、threashold以上ならダメ
+    my $last_succeeds = $self->db->select_all('
+        SELECT ip, MAX(id) AS last_login_id FROM login_log WHERE succeeded = 1 GROUP by ip');
+
+    for my $row (@$last_succeeds) {
+        my $count = $self->db->select_one('SELECT COUNT(1) AS cnt FROM login_log WHERE ip = ? AND ? < id', $row->{ip}, $row->{last_login_id});
+        if ($threshold <= $count) {
+            push @ips, $row->{ip};
+        }
+    }
+
+    \@ips;
 }
 
 sub locked_users {
