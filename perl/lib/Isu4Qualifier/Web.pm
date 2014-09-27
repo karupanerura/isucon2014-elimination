@@ -44,20 +44,24 @@ sub calculate_password_hash {
 
 sub user_locked {
     my ($self, $user) = @_;
-    my $log = $self->db->select_row(
-        'SELECT COUNT(1) AS failures FROM login_log WHERE user_id = ? AND id > IFNULL((select id from login_log where user_id = ? AND succeeded = 1 ORDER BY id DESC LIMIT 1), 0)',
-        $user->{'id'}, $user->{'id'});
+    my $summary = $self->db->select_row(
+        'SELECT last_failure_count FROM user_login_failure_count WHERE user_id = ?'
+        $user->{id}
+    );
 
-    $self->config->{user_lock_threshold} <= $log->{failures};
+    return unless $summary;
+    $self->config->{user_lock_threshold} <= $summary->{last_failure_count};
 };
 
 sub ip_banned {
     my ($self, $ip) = @_;
-    my $log = $self->db->select_row(
-        'SELECT COUNT(1) AS failures FROM login_log WHERE ip = ? AND id > IFNULL((select id from login_log where ip = ? AND succeeded = 1 ORDER BY id DESC LIMIT 1), 0)',
-        $ip, $ip);
+    my $summary = $self->db->select_row(
+        'SELECT last_failure_count FROM ip_login_failure_count WHERE ip = ?'
+        $ip
+    );
 
-    $self->config->{ip_ban_threshold} <= $log->{failures};
+    return unless $summary;
+    $self->config->{ip_ban_threshold} <= $summary->{last_failure_count};
 };
 
 sub attempt_login {
@@ -161,10 +165,76 @@ sub locked_users {
 
 sub login_log {
     my ($self, $succeeded, $login, $ip, $user_id) = @_;
+
+    my $txn = $self->db->txn_scope;
+
     $self->db->query(
         'INSERT INTO login_log (`created_at`, `user_id`, `login`, `ip`, `succeeded`) VALUES (NOW(),?,?,?,?)',
         $user_id, $login, $ip, ($succeeded ? 1 : 0)
     );
+
+    if ($succeeded) {
+
+        # ログイン成功したら、失敗回数をリセット
+        $self->db->query(
+            'UPDATE user_login_last_failure_count SET last_failure_count = 0 WHERE user_id = ?',
+            $user_id
+        );
+
+        $self->db->query(
+            'UPDATE ip_login_last_failure_count SET last_failure_count = 0 WHERE ip = ?',
+            $ip
+        );
+    }
+    else {
+
+        # XXX しきい値に達したら、incrしないようにしてもいいけど、それだと、しきい値の変更に弱いので、一旦避ける
+
+        # user_locked用のfailure_countサマリー
+        # - insert or update ...
+        {
+            my $user_login_summary = $self->db->select_row(
+                'SELECT user_id FROM user_login_last_failure_count WHERE user_id = ?',
+                $user_id
+            );
+            if ($user_login_summary) {
+                $self->db->query(
+                    'UPDATE user_login_last_failure_count SET last_failure_count = last_failure_count + 1 WHERE user_id = ?',
+                    $user_id,
+                );
+           }
+            else {
+                $self->db->query(
+                    'INSERT INTO user_login_last_failure_count (`user_id`) VALUES (?)',
+                    $user_id,
+                );
+            }
+        }
+
+
+        # ip_banned用のfailure_countサマリー
+        # - insert or update ...
+        {
+            my $ip_login_summary = $self->db->select_row(
+                'SELECT ip FROM ip_login_last_failure_count WHERE ip = ?',
+                $ip
+            );
+            if ($ip_login_summary) {
+                $self->db->query(
+                    'UPDATE ip_login_last_failure_count SET last_failure_count = last_failure_count + 1 WHERE ip = ?',
+                    $ip,
+                );
+           }
+            else {
+                $self->db->query(
+                    'INSERT INTO ip_login_last_failure_count (`ip`) VALUES (?)',
+                    $ip,
+                );
+            }
+        }
+    }
+
+    $txn->commit;
 };
 
 sub set_flash {
