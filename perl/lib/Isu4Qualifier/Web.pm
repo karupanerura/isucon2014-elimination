@@ -1,30 +1,50 @@
 package Isu4Qualifier::Web;
-
 use strict;
 use warnings;
 use utf8;
+
 use Kossy;
 use DBIx::Sunny;
 use Digest::SHA qw/ sha256_hex /;
-use Data::Dumper;
+use Data::MessagePack;
+use Compress::LZ4;
+use Cache::Memcached::Fast;
 
-sub config {
-    my ($self) = @_;
-    $self->{_config} ||= {
+{
+    my $config = {
         user_lock_threshold => $ENV{'ISU4_USER_LOCK_THRESHOLD'} || 3,
-        ip_ban_threshold    => $ENV{'ISU4_IP_BAN_THRESHOLD'}    || 10
+        ip_ban_threshold    => $ENV{'ISU4_IP_BAN_THRESHOLD'}    || 10,
     };
-};
+    sub config { $config }
+}
+
+{
+    my $msgpack = Data::MessagePack->new->utf8;
+    sub _message_pack   { $msgpack->pack(@_)   }
+    sub _message_unpack { $msgpack->unpack(@_) }
+    sub _compress_lz4   { ${$_[1]} = Compress::LZ4::compress(${$_[0]})   }
+    sub _uncompress_lz4 { ${$_[1]} = Compress::LZ4::decompress(${$_[0]}) }
+
+    my $memcached = Cache::Memcached::Fast->new({
+        servers            => ['127.0.0.1:11211'],
+        serialize_methods  => [\&_message_pack, \&_message_unpack],
+        utf8               => 1,
+        ketama_points      => 150,
+        hash_namespace     => 0,
+        compress_threshold => 5_000,
+        compress_methods   => [\&_compress_lz4, \&_uncompress_lz4],
+    });
+    sub cache { $memcached }
+}
 
 sub db {
   my ($self) = @_;
-  my $host     = $ENV{ISU4_DB_HOST} || '127.0.0.1';
-  my $port     = $ENV{ISU4_DB_PORT} || 3306;
-  my $username = $ENV{ISU4_DB_USER} || 'root';
-  my $password = $ENV{ISU4_DB_PASSWORD};
-  my $database = $ENV{ISU4_DB_NAME} || 'isu4_qualifier';
-
-  $self->{_db} ||= do {
+  return $self->{_db} //= do {
+      my $host     = $ENV{ISU4_DB_HOST} || '127.0.0.1';
+      my $port     = $ENV{ISU4_DB_PORT} || 3306;
+      my $username = $ENV{ISU4_DB_USER} || 'root';
+      my $password = $ENV{ISU4_DB_PASSWORD};
+      my $database = $ENV{ISU4_DB_NAME} || 'isu4_qualifier';
       DBIx::Sunny->connect(
           "dbi:mysql:database=$database;host=$host;port=$port", $username, $password, {
               RaiseError => 1,
