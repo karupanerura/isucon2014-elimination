@@ -1,7 +1,9 @@
 use strict;
 use warnings;
 use utf8;
-
+use FindBin;
+use lib "$FindBin::Bin/extlib/lib/perl5";
+use lib "$FindBin::Bin/lib";
 use Isu4Qualifier::Web;
 use Parallel::Async;
 use List::Util qw/reduce/;
