@@ -6,11 +6,5 @@
 
 # タイムスケジュール
 
-以下、暫定のもの。(SEE ALSO: [#6](https://github.com/karupanerura/isucon2014-elimination/issues/6))
-
-* 09:00 集合
-* 10:00 競技開始
-* 12:00 昼飯
-* 17:30 レギュレーションに沿った手順でベンチマークを取る
-* 18:00 競技終了
-* 19:00 飲む
+> https://docs.google.com/document/d/1bndDHWuhQjsYFH7L2-PtZJrIdimFHRC39lb38mTM62c/edit?pli=1
+(SEE ALSO: [#6](https://github.com/karupanerura/isucon2014-elimination/issues/6))
