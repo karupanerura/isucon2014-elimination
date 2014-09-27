@@ -23,6 +23,7 @@ requires 'Redis::Fast';
 
 # init.pl
 requires 'Parallel::Async';
+requires 'Data::Section::Simple';
 
 # app.psgi
 requires 'Plack';
