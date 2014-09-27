@@ -178,16 +178,25 @@ sub banned_ips {
 
 sub locked_users {
     my ($self) = @_;
+    my @user_ids;
+    my $threshold = $self->config->{user_lock_threshold};
 
-    $self->db->selectcol_arrayref('
-        SELECT user_id FROM
-            user_login_last_failure_count
-            WHERE
-                last_failure_count >= ?
-        ',
-        undef,
-        $self->config->{user_lock_threshold}
-    );
+    my $not_succeeded = $self->db->select_all('SELECT user_id, login FROM (SELECT user_id, login, MAX(succeeded) as max_succeeded, COUNT(1) as cnt FROM login_log GROUP BY user_id) AS t0 WHERE t0.user_id IS NOT NULL AND t0.max_succeeded = 0 AND t0.cnt >= ?', $threshold);
+
+    for my $row (@$not_succeeded) {
+        push @user_ids, $row->{login};
+    }
+
+    my $last_succeeds = $self->db->select_all('SELECT user_id, login, MAX(id) AS last_login_id FROM login_log WHERE user_id IS NOT NULL AND succeeded = 1 GROUP BY user_id');
+
+    for my $row (@$last_succeeds) {
+        my $count = $self->db->select_one('SELECT COUNT(1) AS cnt FROM login_log WHERE user_id = ? AND ? < id', $row->{user_id}, $row->{last_login_id});
+        if ($threshold <= $count) {
+            push @user_ids, $row->{login};
+        }
+    }
+
+    \@user_ids;
 }
 
 sub login_log {
