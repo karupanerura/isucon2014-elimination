@@ -471,6 +471,17 @@ DISTRIBUTIONS
       ExtUtils::MakeMaker 6.11
       File::Spec 0
       IO::Dir 0
+  File-Which-1.09
+    pathname: A/AD/ADAMK/File-Which-1.09.tar.gz
+    provides:
+      File::Which 1.09
+    requirements:
+      Exporter 0
+      ExtUtils::MakeMaker 0
+      File::Spec 0.60
+      Getopt::Std 0
+      Test::More 0.80
+      Test::Script 1.05
   Filesys-Notify-Simple-0.12
     pathname: M/MI/MIYAGAWA/Filesys-Notify-Simple-0.12.tar.gz
     provides:
@@ -674,6 +685,14 @@ DISTRIBUTIONS
       Encode 2.10
       Exporter 5.57
       ExtUtils::MakeMaker 6.30
+  IPC-Run3-0.048
+    pathname: R/RJ/RJBS/IPC-Run3-0.048.tar.gz
+    provides:
+      IPC::Run3 0.048
+    requirements:
+      ExtUtils::MakeMaker 0
+      Test::More 0.31
+      Time::HiRes 0
   IPC-Signal-1.00
     pathname: R/RO/ROSCH/IPC-Signal-1.00.tar.gz
     provides:
@@ -1009,6 +1028,22 @@ DISTRIBUTIONS
       POSIX 0
       Time::Local 0
       perl 5.008001
+  Parallel-Async-0.03
+    pathname: K/KA/KARUPA/Parallel-Async-0.03.tar.gz
+    provides:
+      Parallel::Async 0.03
+      Parallel::Async::Chain undef
+      Parallel::Async::Task undef
+    requirements:
+      CPAN::Meta 0
+      CPAN::Meta::Prereqs 0
+      Class::Accessor::Lite 0
+      ExtUtils::CBuilder 0
+      Module::Build 0.38
+      Time::HiRes 0
+      Try::Tiny 0
+      parent 0
+      perl 5.008005
   Parallel-Prefork-0.17
     pathname: K/KA/KAZUHO/Parallel-Prefork-0.17.tar.gz
     provides:
@@ -1149,12 +1184,34 @@ DISTRIBUTIONS
       Tie::Hash 0
       parent 0.223
       perl 5.008005
+  Probe-Perl-0.03
+    pathname: K/KW/KWILLIAMS/Probe-Perl-0.03.tar.gz
+    provides:
+      Probe::Perl 0.03
+    requirements:
+      Config 0
+      ExtUtils::MakeMaker 6.30
+      File::Spec 0
+      strict 0
   Proc-Wait3-0.04
     pathname: C/CT/CTILMES/Proc-Wait3-0.04.tar.gz
     provides:
       Proc::Wait3 0.04
     requirements:
       ExtUtils::MakeMaker 0
+  Redis-Fast-0.12
+    pathname: S/SH/SHOGO/Redis-Fast-0.12.tar.gz
+    provides:
+      Redis::Fast 0.12
+      Redis::Fast::Hash undef
+      Redis::Fast::List undef
+      Redis::Fast::Sentinel undef
+    requirements:
+      File::Which 0
+      Module::Build 0.38
+      Module::Build::XSUtil 0.02
+      Try::Tiny 0
+      perl 5.008001
   Router-Boom-1.01
     pathname: T/TO/TOKUHIROM/Router-Boom-1.01.tar.gz
     provides:
@@ -1322,6 +1379,19 @@ DISTRIBUTIONS
       Test::Builder::Module 0
       Test::More 0.61
       perl 5.008_001
+  Test-Script-1.07
+    pathname: A/AD/ADAMK/Test-Script-1.07.tar.gz
+    provides:
+      Test::Script 1.07
+    requirements:
+      ExtUtils::MakeMaker 6.42
+      File::Spec 0.80
+      IPC::Run3 0.034
+      Probe::Perl 0.01
+      Test::Builder 0.32
+      Test::Builder::Tester 1.02
+      Test::More 0.62
+      blib 0
   Test-SharedFork-0.29
     pathname: E/EX/EXODIST/Test-SharedFork-0.29.tar.gz
     provides:
