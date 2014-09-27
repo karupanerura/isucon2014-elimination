@@ -19,6 +19,11 @@ requires 'Digest::SHA';
 requires 'Data::MessagePack';
 requires 'Compress::LZ4';
 requires 'Cache::Memcached::Fast';
+requires 'Redis::Fast';
+
+# init.pl
+requires 'Parallel::Async';
+requires 'Data::Section::Simple';
 
 # app.psgi
 requires 'Plack';
