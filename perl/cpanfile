@@ -3,6 +3,7 @@ requires 'YAML::XS';
 requires 'JSON::XS';
 requires 'HTTP::Parser::XS';
 requires 'Linux::Inotify2';
+requires 'Cookie::Baker::XS';
 
 # servers
 requires 'Server::Starter';
