@@ -37,6 +37,22 @@ use Cache::Memcached::Fast;
     sub cache { $memcached }
 }
 
+# XXX: extend for DBIx::Sunny
+sub DBIx::Sunny::db::query_cached {
+    my $self = shift;
+    my ($query, @bind) = $self->fill_arrayref(@_);
+    my $sth = $self->prepare_cached($query);
+    $sth->execute(@bind);
+}
+
+sub DBIx::Sunny::db::query_cached_rows {
+    my $self = shift;
+    my ($query, @bind) = $self->fill_arrayref(@_);
+    my $sth = $self->prepare_cached($query);
+    $sth->execute(@bind);
+    return $sth->rows;
+}
+
 sub db {
   my ($self) = @_;
   return $self->{_db} //= do {
@@ -186,22 +202,18 @@ sub locked_users {
 sub login_log {
     my ($self, $succeeded, $login, $ip, $user_id) = @_;
 
-    my $txn = $self->db->txn_scope;
-
-    $self->db->query(
+    $self->db->query_cached(
         'INSERT INTO login_log (`created_at`, `user_id`, `login`, `ip`, `succeeded`) VALUES (NOW(),?,?,?,?)',
         $user_id, $login, $ip, ($succeeded ? 1 : 0)
     );
 
     if ($succeeded) {
-
         # ログイン成功したら、失敗回数をリセット
-        $self->db->query(
+        $self->db->query_cached(
             'UPDATE user_login_last_failure_count SET last_failure_count = 0 WHERE user_id = ?',
             $user_id
         );
-
-        $self->db->query(
+        $self->db->query_cached(
             'UPDATE ip_login_last_failure_count SET last_failure_count = 0 WHERE ip = ?',
             $ip
         );
@@ -213,48 +225,28 @@ sub login_log {
         # user_locked用のfailure_countサマリー
         # - insert or update ...
         if ($user_id) {
-            my $user_login_summary = $self->db->select_row(
-                'SELECT user_id FROM user_login_last_failure_count WHERE user_id = ?',
-                $user_id
+            $self->db->query_cached_rows(
+                'UPDATE user_login_last_failure_count SET last_failure_count = last_failure_count + 1 WHERE user_id = ?',
+                $user_id,
+            ) or $self->db->query_cached(
+                'INSERT INTO user_login_last_failure_count (`user_id`, `last_failure_count`) VALUES (?, 1)',
+                $user_id,
             );
-            if ($user_login_summary) {
-                $self->db->query(
-                    'UPDATE user_login_last_failure_count SET last_failure_count = last_failure_count + 1 WHERE user_id = ?',
-                    $user_id,
-                );
-           }
-            else {
-                $self->db->query(
-                    'INSERT INTO user_login_last_failure_count (`user_id`, `last_failure_count`) VALUES (?, 1)',
-                    $user_id,
-                );
-            }
         }
 
 
         # ip_banned用のfailure_countサマリー
         # - insert or update ...
         if ($ip) {
-            my $ip_login_summary = $self->db->select_row(
-                'SELECT ip FROM ip_login_last_failure_count WHERE ip = ?',
+            $self->db->query_cached_rows(
+                'UPDATE ip_login_last_failure_count SET last_failure_count = last_failure_count + 1 WHERE ip = ?',
+                $ip
+            ) or $self->db->query_cached(
+                'INSERT INTO ip_login_last_failure_count (`ip`, `last_failure_count`) VALUES (?, 1)',
                 $ip
             );
-            if ($ip_login_summary) {
-                $self->db->query(
-                    'UPDATE ip_login_last_failure_count SET last_failure_count = last_failure_count + 1 WHERE ip = ?',
-                    $ip,
-                );
-           }
-            else {
-                $self->db->query(
-                    'INSERT INTO ip_login_last_failure_count (`ip`, `last_failure_count`) VALUES (?, 1)',
-                    $ip
-                );
-            }
         }
     }
-
-    $txn->commit;
 };
 
 sub set_flash {
@@ -470,7 +462,7 @@ get '/report' => sub {
 #get '/init_user_login_last_failure_count_not_succeed' => sub {
 #    my ($self, $c) = @_;
 #
-#    $self->db->query('
+#    $self->db->query_cached('
 #        INSERT INTO
 #            user_login_last_failure_count
 #            (user_id, last_failure_count)
@@ -496,7 +488,7 @@ get '/report' => sub {
 #            SELECT COUNT(1) AS cnt FROM login_log WHERE user_id = ? AND ? < id', $row->{user_id}, $row->{last_login_id}
 #        );
 #
-#        $self->db->query(
+#        $self->db->query_cached(
 #            'INSERT INTO user_login_last_failure_count (user_id, last_failure_count) VALUES (?, ?)',
 #            $row->{user_id}, $count,
 #        );
@@ -509,7 +501,7 @@ get '/report' => sub {
 #get '/init_ip_login_last_failure_count_not_succeed' => sub {
 #    my ($self, $c) = @_;
 #
-#    $self->db->query('
+#    $self->db->query_cached('
 #        INSERT INTO
 #            ip_login_last_failure_count
 #            (ip, last_failure_count)
@@ -533,7 +525,7 @@ get '/report' => sub {
 #            SELECT COUNT(1) AS cnt FROM login_log WHERE ip = ? AND ? < id', $row->{ip}, $row->{last_login_id}
 #        );
 #
-#        $self->db->query(
+#        $self->db->query_cached(
 #            'INSERT INTO ip_login_last_failure_count (ip, last_failure_count) VALUES (?, ?)',
 #            $row->{ip}, $count,
 #        );
