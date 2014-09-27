@@ -65,7 +65,7 @@ sub calculate_password_hash {
 sub user_locked {
     my ($self, $user) = @_;
     my $summary = $self->db->select_row(
-        'SELECT last_failure_count FROM user_login_failure_count WHERE user_id = ?'
+        'SELECT last_failure_count FROM user_login_last_failure_count WHERE user_id = ?',
         $user->{id}
     );
 
@@ -76,7 +76,7 @@ sub user_locked {
 sub ip_banned {
     my ($self, $ip) = @_;
     my $summary = $self->db->select_row(
-        'SELECT last_failure_count FROM ip_login_failure_count WHERE ip = ?'
+        'SELECT last_failure_count FROM ip_login_last_failure_count WHERE ip = ?',
         $ip
     );
 
@@ -212,7 +212,7 @@ sub login_log {
 
         # user_locked用のfailure_countサマリー
         # - insert or update ...
-        {
+        if ($user_id) {
             my $user_login_summary = $self->db->select_row(
                 'SELECT user_id FROM user_login_last_failure_count WHERE user_id = ?',
                 $user_id
@@ -225,7 +225,7 @@ sub login_log {
            }
             else {
                 $self->db->query(
-                    'INSERT INTO user_login_last_failure_count (`user_id`) VALUES (?)',
+                    'INSERT INTO user_login_last_failure_count (`user_id`, `last_failure_count`) VALUES (?, 1)',
                     $user_id,
                 );
             }
@@ -234,7 +234,7 @@ sub login_log {
 
         # ip_banned用のfailure_countサマリー
         # - insert or update ...
-        {
+        if ($ip) {
             my $ip_login_summary = $self->db->select_row(
                 'SELECT ip FROM ip_login_last_failure_count WHERE ip = ?',
                 $ip
@@ -247,8 +247,8 @@ sub login_log {
            }
             else {
                 $self->db->query(
-                    'INSERT INTO ip_login_last_failure_count (`ip`) VALUES (?)',
-                    $ip,
+                    'INSERT INTO ip_login_last_failure_count (`ip`, `last_failure_count`) VALUES (?, 1)',
+                    $ip
                 );
             }
         }
@@ -336,5 +336,83 @@ get '/report' => sub {
         locked_users => $self->locked_users,
     });
 };
+
+# サマリーの初期データ確保する君
+#get '/init_user_login_last_failure_count_not_succeed' => sub {
+#    my ($self, $c) = @_;
+#
+#    $self->db->query('
+#        INSERT INTO
+#            user_login_last_failure_count
+#            (user_id, last_failure_count)
+#            SELECT user_id, cnt FROM (
+#                SELECT
+#                    user_id, MAX(succeeded) as max_succeeded, COUNT(1) as cnt FROM login_log GROUP BY user_id
+#                ) AS t0
+#            WHERE
+#                t0.user_id IS NOT NULL
+#                AND
+#                t0.max_succeeded = 0
+#    ');
+#
+#    my $last_succeeds = $self->db->select_all('
+#        SELECT
+#            user_id, MAX(id) AS last_login_id FROM login_log
+#        WHERE
+#            user_id IS NOT NULL AND succeeded = 1 GROUP BY user_id'
+#        );
+#
+#    for my $row (@$last_succeeds) {
+#        my $count = $self->db->select_one('
+#            SELECT COUNT(1) AS cnt FROM login_log WHERE user_id = ? AND ? < id', $row->{user_id}, $row->{last_login_id}
+#        );
+#
+#        $self->db->query(
+#            'INSERT INTO user_login_last_failure_count (user_id, last_failure_count) VALUES (?, ?)',
+#            $row->{user_id}, $count,
+#        );
+#    }
+#
+#    $c->render_json(+{});
+#};
+#
+#
+#get '/init_ip_login_last_failure_count_not_succeed' => sub {
+#    my ($self, $c) = @_;
+#
+#    $self->db->query('
+#        INSERT INTO
+#            ip_login_last_failure_count
+#            (ip, last_failure_count)
+#            SELECT ip, cnt FROM (
+#                SELECT
+#                    ip, MAX(succeeded) as max_succeeded, COUNT(1) as cnt FROM login_log GROUP BY ip 
+#                ) AS t0
+#            WHERE
+#                t0.max_succeeded = 0
+#    ');
+#
+#    my $last_succeeds = $self->db->select_all('
+#        SELECT
+#            ip, MAX(id) AS last_login_id FROM login_log
+#        WHERE
+#            succeeded = 1 GROUP BY ip'
+#        );
+#
+#    for my $row (@$last_succeeds) {
+#        my $count = $self->db->select_one('
+#            SELECT COUNT(1) AS cnt FROM login_log WHERE ip = ? AND ? < id', $row->{ip}, $row->{last_login_id}
+#        );
+#
+#        $self->db->query(
+#            'INSERT INTO ip_login_last_failure_count (ip, last_failure_count) VALUES (?, ?)',
+#            $row->{ip}, $count,
+#        );
+#    }
+#
+#    $c->render_json(+{});
+#};
+
+
 
 1;

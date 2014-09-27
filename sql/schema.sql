@@ -16,11 +16,11 @@ CREATE TABLE IF NOT EXISTS `login_log` (
 
 CREATE TABLE IF NOT EXISTS `user_login_last_failure_count` (
   `user_id`            int PRIMARY KEY,
-  `last_failure_count` int NOT NULL DEFAULT 0
+  `last_failure_count` int NOT NULL
 ) DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS `ip_login_last_failure_count` (
   `ip` varchar(255) PRIMARY KEY,
-  `last_failure_count` int NOT NULL DEFAULT 0
+  `last_failure_count` int NOT NULL
 ) DEFAULT CHARSET=utf8;
 
