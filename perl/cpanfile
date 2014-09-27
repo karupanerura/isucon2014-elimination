@@ -21,6 +21,9 @@ requires 'Compress::LZ4';
 requires 'Cache::Memcached::Fast';
 requires 'Redis::Fast';
 
+# init.pl
+requires 'Parallel::Async';
+
 # app.psgi
 requires 'Plack';
 requires 'Plack::Middleware::Session::Simple';
