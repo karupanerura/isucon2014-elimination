@@ -196,12 +196,11 @@ sub login_log {
         my $last_login = $self->current_login($user_id);
         $self->redis->hmset("last_login:$user_id", %$last_login) if $last_login;
 
-        my $now = Time::Moment->now;
         $self->redis->hmset("current_login:$user_id",
             user_id    => $user_id,
             login      => $login,
             ip         => $ip,
-            created_at => $now->year.'-'.$now->month.'-'.$now->day_of_month.' '.$now->hour.':'.$now->minute.':'.$now->second,
+            created_at => Time::Moment->now->strftime('%Y-%m-%d %H:%M:%S'),
         );
     }
     else {
