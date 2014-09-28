@@ -12,7 +12,7 @@ myport=3306
 mysql -h ${myhost} -P ${myport} -u ${myuser} -e "DROP DATABASE IF EXISTS ${mydb}; CREATE DATABASE ${mydb}"
 mysql -h ${myhost} -P ${myport} -u ${myuser} ${mydb} < sql/schema.sql
 mysql -h ${myhost} -P ${myport} -u ${myuser} ${mydb} < sql/dummy_users.sql
-mysql -h ${myhost} -P ${myport} -u ${myuser} ${mydb} < sql/dummy_log.sql
+#mysql -h ${myhost} -P ${myport} -u ${myuser} ${mydb} < sql/dummy_log.sql
 mysql -h ${myhost} -P ${myport} -u ${myuser} ${mydb} < sql/ip_login_last_failure_count.sql
 mysql -h ${myhost} -P ${myport} -u ${myuser} ${mydb} < sql/user_login_last_failure_count.sql
 
