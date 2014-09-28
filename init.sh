@@ -4,6 +4,7 @@ set -e
 cd $(dirname $0)
 
 sudo -H /etc/init.d/memcached restart
+supervisorctl restart isucon_perl
 
 myuser=root
 mydb=isu4_qualifier
