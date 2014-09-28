@@ -2,6 +2,7 @@ package Isu4Qualifier::Web;
 use strict;
 use warnings;
 use utf8;
+use feature qw/state/;
 
 use Kossy;
 use DBIx::Sunny;
@@ -10,6 +11,8 @@ use Data::MessagePack;
 use Compress::LZ4;
 use Cache::Memcached::Fast;
 use Redis::Fast;
+use POSIX qw/ strftime /;
+use List::MoreUtils qw/ mesh /;
 
 our $USERS       = __PACKAGE__->db->select_all('SELECT * FROM users');
 our %LOGIN_USERS = map { $_->{login} => $_ } @$USERS;
@@ -150,12 +153,23 @@ sub current_user {
 
 sub last_login {
     my ($self, $user_id) = @_;
+    $self->_fetch_login("last_login:$user_id");
+}
 
-    my $logs = $self->db->select_all(
-        'SELECT * FROM login_log WHERE succeeded = 1 AND user_id = ? ORDER BY id DESC LIMIT 2',
-        $user_id);
+sub current_login {
+    my ($self, $user_id) = @_;
+    $self->_fetch_login("current_login:$user_id");
+}
 
-    @$logs[-1];
+sub _fetch_login {
+    my ($self, $key) = @_;
+    state $keys = [qw/user_id login created_at ip/];
+    my @values  = $self->redis->hmget($key, @$keys);
+    return unless grep defined, @values;
+
+    +{
+        mesh @$keys, @values
+    }
 }
 
 sub banned_ips {
@@ -173,15 +187,21 @@ sub locked_users {
 sub login_log {
     my ($self, $succeeded, $login, $ip, $user_id) = @_;
 
-    $self->db->query_cached(
-        'INSERT INTO login_log (`created_at`, `user_id`, `login`, `ip`, `succeeded`) VALUES (NOW(),?,?,?,?)',
-        $user_id, $login, $ip, ($succeeded ? 1 : 0)
-    );
-
     if ($succeeded) {
         # ログイン成功したら、失敗回数をリセット
         $self->redis->set("user_login_last_failure_count:$user_id", 0);
         $self->redis->set("ip_login_last_failure_count:$ip",        0);
+
+        # 直近の成功ログインを記録
+        my $last_login = $self->current_login($user_id);
+        $self->redis->hmset("last_login:$user_id", %$last_login) if $last_login;
+
+        $self->redis->hmset("current_login:$user_id",
+            user_id    => $user_id,
+            login      => $login,
+            ip         => $ip,
+            created_at => strftime '%Y-%m-%d %H:%M:%S', localtime,
+        );
     }
     else {
         # user_locked用のfailure_countサマリー
