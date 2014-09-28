@@ -11,7 +11,7 @@ use Data::MessagePack;
 use Compress::LZ4;
 use Cache::Memcached::Fast;
 use Redis::Fast;
-use POSIX qw/ strftime /;
+use Time::Moment;
 use List::MoreUtils qw/ mesh /;
 
 our $USERS       = __PACKAGE__->db->select_all('SELECT * FROM users');
@@ -196,11 +196,12 @@ sub login_log {
         my $last_login = $self->current_login($user_id);
         $self->redis->hmset("last_login:$user_id", %$last_login) if $last_login;
 
+        my $now = Time::Moment->now;
         $self->redis->hmset("current_login:$user_id",
             user_id    => $user_id,
             login      => $login,
             ip         => $ip,
-            created_at => strftime '%Y-%m-%d %H:%M:%S', localtime,
+            created_at => $now->year.'-'.$now->month.'-'.$now->day.' '.$now->hour.':'.$now->minute.':'.$now->second,
         );
     }
     else {
