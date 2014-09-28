@@ -201,7 +201,7 @@ sub login_log {
             user_id    => $user_id,
             login      => $login,
             ip         => $ip,
-            created_at => $now->year.'-'.$now->month.'-'.$now->day.' '.$now->hour.':'.$now->minute.':'.$now->second,
+            created_at => $now->year.'-'.$now->month.'-'.$now->day_of_month.' '.$now->hour.':'.$now->minute.':'.$now->second,
         );
     }
     else {
