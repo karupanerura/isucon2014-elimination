@@ -1359,6 +1359,18 @@ DISTRIBUTIONS
       Test::More 0
       Test::NoWarnings 0.02
       Test::Tester 0.04
+  Test-Fatal-0.013
+    pathname: R/RJ/RJBS/Test-Fatal-0.013.tar.gz
+    provides:
+      Test::Fatal 0.013
+    requirements:
+      Carp 0
+      Exporter 5.57
+      ExtUtils::MakeMaker 6.30
+      Test::Builder 0
+      Try::Tiny 0.07
+      strict 0
+      warnings 0
   Test-NoWarnings-1.04
     pathname: A/AD/ADAMK/Test-NoWarnings-1.04.tar.gz
     provides:
@@ -1475,6 +1487,20 @@ DISTRIBUTIONS
       ExtUtils::MakeMaker 6.42
       Scalar::Util 0
       Text::Xslate 1.3000
+      perl 5.008001
+  Time-Moment-0.18
+    pathname: C/CH/CHANSEN/Time-Moment-0.18.tar.gz
+    provides:
+      Time::Moment 0.18
+    requirements:
+      Carp 0
+      ExtUtils::MakeMaker 6.59
+      ExtUtils::ParseXS 3.18
+      Test::Fatal 0.006
+      Test::More 0.88
+      Test::Requires 0
+      Time::HiRes 0
+      XSLoader 0.02
       perl 5.008001
   Try-Tiny-0.22
     pathname: D/DO/DOY/Try-Tiny-0.22.tar.gz
