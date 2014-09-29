@@ -246,9 +246,22 @@ sub _render_html_content {
 <html>
   <head>
     <meta charset="UTF-8">
-    <link rel="stylesheet" href="/stylesheets/bootstrap.min.css">
-    <link rel="stylesheet" href="/stylesheets/bootflat.min.css">
-    <link rel="stylesheet" href="/stylesheets/isucon-bank.css">
+    <script>
+      var links = [
+        '/stylesheets/bootstrap.min.css',
+        '/stylesheets/bootflat.min.css',
+        '/stylesheets/isucon-bank.css'
+      ];
+      window.onload = function() {
+        var head = document.getElementsByTagName("head")[0];
+        links.forEach(function (link) {
+          var element = document.createElement("link");
+          element.setAttribute('rel', 'stylesheet');
+          element.setAttribute('href', link);
+          head.appendChild(element);
+        });
+      };
+    </script>
     <title>isucon4</title>
   </head>
   <body>
