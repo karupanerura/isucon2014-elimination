@@ -188,7 +188,9 @@ sub login_log {
         $self->redis->set("ip_login_last_failure_count:$ip",        0);
 
         # 直近の成功ログインを記録
-        $self->redis->rename("current_login:$user_id", "last_login:$user_id");
+        if ($self->redis->exists("current_login:$user_id")) {
+            $self->redis->rename("current_login:$user_id", "last_login:$user_id") ;
+        }
         $self->redis->hmset("current_login:$user_id",
             user_id    => $user_id,
             login      => $login,
