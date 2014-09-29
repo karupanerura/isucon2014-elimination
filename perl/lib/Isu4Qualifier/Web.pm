@@ -12,7 +12,6 @@ use Compress::LZ4;
 use Cache::Memcached::Fast;
 use Redis::Fast;
 use Time::Moment;
-use List::MoreUtils qw/ mesh /;
 
 our $USERS       = __PACKAGE__->db->select_all('SELECT * FROM users');
 our %LOGIN_USERS = map { $_->{login} => $_ } @$USERS;
@@ -163,13 +162,9 @@ sub current_login {
 
 sub _fetch_login {
     my ($self, $key) = @_;
-    state $keys = [qw/user_id login created_at ip/];
-    my @values  = $self->redis->hmget($key, @$keys);
-    return unless grep defined, @values;
-
-    +{
-        mesh @$keys, @values
-    }
+    my %login = $self->redis->hgetall($key);
+    return unless %login;
+    return \%login;
 }
 
 sub banned_ips {

@@ -20,7 +20,6 @@ requires 'Data::MessagePack';
 requires 'Compress::LZ4';
 requires 'Cache::Memcached::Fast';
 requires 'Redis::Fast';
-requires 'List::MoreUtils';
 requires 'Test::Fatal'; # for Time::Moment (TODO: p-r)
 requires 'Time::Moment';
 
